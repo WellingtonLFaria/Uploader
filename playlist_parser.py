@@ -50,8 +50,8 @@ class Video:
 
 def run():
     playlists = [Playlist("blank", PATH)]
-    for item in os.listdir():
-        if is_a_folder(item):
+    for item in os.listdir(PATH):
+        if is_a_folder(f"{PATH}/{item}"):
             playlists.append(Playlist(item, f"{PATH}/{item}"))
 
     for playlist in playlists:
