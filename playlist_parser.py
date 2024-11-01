@@ -14,10 +14,10 @@ def is_a_folder(path: str):
         return False
 
 def is_a_video(file: str) -> bool:
-    suported_video_extensions = ['mp4']
+    supported_video_extensions = ['mp4','mkv','mov']
     file_extension = file.split('.')
     try:
-        if file_extension[1] in suported_video_extensions:
+        if file_extension[1] in supported_video_extensions:
             return True
         return False
     except:

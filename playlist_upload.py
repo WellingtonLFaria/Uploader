@@ -27,7 +27,8 @@ RETRIABLE_EXCEPTIONS = (httplib2.HttpLib2Error, IOError, httplib.NotConnected,
 RETRIABLE_STATUS_CODES = [500, 502, 503, 504]
 
 
-YOUTUBE_UPLOAD_SCOPE = "https://www.googleapis.com/auth/youtube.upload"
+YOUTUBE_SCOPES = ["https://www.googleapis.com/auth/youtube", "https://www.googleapis.com/auth/youtube.force-ssl", 
+          "https://www.googleapis.com/auth/youtubepartner"]
 YOUTUBE_API_SERVICE_NAME = "youtube"
 YOUTUBE_API_VERSION = "v3"
 
@@ -50,16 +51,16 @@ https://developers.google.com/api-client-library/python/guide/aaa_client_secrets
 VALID_PRIVACY_STATUSES = ("public", "private", "unlisted")
 
 
-def get_authenticated_service(args):
+def get_authenticated_service():
   flow = flow_from_clientsecrets(CLIENT_SECRETS_FILE,
-    scope=YOUTUBE_UPLOAD_SCOPE,
+    scope=YOUTUBE_SCOPES,
     message=MISSING_CLIENT_SECRETS_MESSAGE)
 
-  storage = Storage("%s-oauth2.json" % sys.argv[0])
+  storage = Storage("oauth2.json")
   credentials = storage.get()
 
   if credentials is None or credentials.invalid:
-    credentials = run_flow(flow, storage, args)
+    credentials = run_flow(flow, storage)
 
   return build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
     http=credentials.authorize(httplib2.Http()))
@@ -117,6 +118,7 @@ def initialize_upload(youtube, video, playlist_id):
     )
 
     response = resumable_upload(insert_request)
+    print(response)
     if playlist_id != None:
         add_video_to_playlist(youtube, response['id'], playlist_id)
 
@@ -152,11 +154,12 @@ def resumable_upload(insert_request):
       sleep_seconds = random.random() * max_sleep
       print ("Sleeping %f seconds and then retrying..." % sleep_seconds)
       time.sleep(sleep_seconds)
+  return response
 
 def main():
     with open("playlist.json", "r") as file:
         playlist = json.loads(file.read())
-        youtube = get_authenticated_service(sys.argv)
+        youtube = get_authenticated_service()
         for item in playlist["playlists"]:
             playlist = item["name"]
             playlist_id = None

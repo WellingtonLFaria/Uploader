@@ -1,4 +1,6 @@
 .env
+env
+venv
 client_secrets.json
-playlist_upload.py-oauth2.json
+oauth2.json
 playlist.json
