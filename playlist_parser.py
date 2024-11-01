@@ -1,5 +1,6 @@
 import os
 import sys
+from json import dumps
 
 PATH = sys.argv[1]
 
@@ -61,5 +62,14 @@ def run():
         else:
             playlist.get_videos(playlist.path)
         print(playlist.__dict__)
-
+    
+    with open("playlist.json", "w") as file:
+        file.write('{"playlists":[')
+        tamanho = len(playlists)
+        for playlist in playlists:
+            if playlists.index(playlist) == tamanho - 1:
+                file.write(f"{dumps(playlist.__dict__)}")
+            else:
+                file.write(f"{dumps(playlist.__dict__)},")
+        file.write("]}")
 run()
