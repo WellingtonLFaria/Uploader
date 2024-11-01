@@ -3,6 +3,7 @@ import httplib2
 import os
 import sys
 import time
+import random
 
 import json
 
@@ -135,13 +136,13 @@ def resumable_upload(insert_request):
           print ("Video id '%s' was successfully uploaded." % response['id'])
         else:
           exit("The upload failed with an unexpected response: %s" % response)
-    except(HttpError, e):
+    except HttpError as e:
       if e.resp.status in RETRIABLE_STATUS_CODES:
         error = "A retriable HTTP error %d occurred:\n%s" % (e.resp.status,
                                                              e.content)
       else:
         raise
-    except (RETRIABLE_EXCEPTIONS, e):
+    except RETRIABLE_EXCEPTIONS as e:
       error = "A retriable error occurred: %s" % e
 
     if error is not None:
@@ -163,7 +164,7 @@ def main():
         for item in playlist["playlists"]:
             playlist = item["name"]
             playlist_id = None
-            if playlist != "blank":
+            if playlist != "blank" and len(item["videos"]) > 0:
                 playlist_id = create_playlist(youtube, playlist, f"Playlist: {playlist}", "public")
             for video in item["videos"]:
                 initialize_upload(youtube, video, playlist_id)
