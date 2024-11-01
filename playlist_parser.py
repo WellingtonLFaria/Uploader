@@ -21,12 +21,13 @@ class Playlist:
                 self.get_videos(f"{path}/{item}")
             else:
                 if is_a_video(item):
-                    self.videos.append(Video(item, f"{path}/{item}").__dict__)
+                    self.videos.append(Video(item.split(".")[0].capitalize(), f"{path}/{item}").__dict__)
 
 class Video:
     def __init__(self, name: str, path: str) -> None:
         self.name = name
         self.path = path
+        self.uploaded = False
 
 def run():
     playlists = create_playlists()
@@ -45,7 +46,7 @@ def get_playlists_videos(playlists: list[Playlist]) -> list[Playlist]:
         if playlist.name == "blank":
             for item in os.listdir(playlist.path):
                 if is_a_video(item):
-                    playlist.videos.append(Video(item, f"{playlist.path}/{item}").__dict__)
+                    playlist.videos.append(Video(item.split(".")[0], f"{playlist.path}/{item}").__dict__)
         else:
             playlist.get_videos(playlist.path)
     return playlists
