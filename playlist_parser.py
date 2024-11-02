@@ -29,6 +29,25 @@ class Video:
         self.path = path
         self.uploaded = False
 
+def is_a_folder(path: str) -> bool:
+    try:
+        if path.split("/")[-1][0] == ".":
+            return False
+        os.listdir(path)
+        return True
+    except:
+        return False
+
+def is_a_video(file: str) -> bool:
+    supported_video_extensions = ['mp4','mkv','mov']
+    file_extension = file.split('.')
+    try:
+        if file_extension[1] in supported_video_extensions:
+            return True
+        return False
+    except:
+        return False
+
 def run():
     playlists = create_playlists()
     playlists = get_playlists_videos(playlists)
@@ -62,24 +81,6 @@ def save_playlists(playlists: list[Playlist]) -> None:
                 file.write(f"{dumps(playlist.__dict__)},")
         file.write("]}")
 
-def is_a_folder(path: str):
-    try:
-        if path.split("/")[-1][0] == ".":
-            return False
-        os.listdir(path)
-        return True
-    except:
-        return False
-
-def is_a_video(file: str) -> bool:
-    supported_video_extensions = ['mp4','mkv','mov']
-    file_extension = file.split('.')
-    try:
-        if file_extension[1] in supported_video_extensions:
-            return True
-        return False
-    except:
-        return False
 
 if __name__ == "__main__":
     run()

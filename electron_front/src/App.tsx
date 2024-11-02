@@ -1,26 +1,41 @@
-import React, { useState } from 'react';
-import './App.css';
+import { useState } from 'react';
 import Playlist from './models/Playlist';
 import PlaylistComponent from './components/Playlist';
 import Video from './models/Video';
 
 function App() {
   const [path, setPath] = useState('');
-  const [playlists, setPlaylists] = useState([
+  const [playlists] = useState([
     new Playlist("ACUnity", "/home/sample/videos/ACUnity", [new Video("ep1", "/home/sample/videos/teste/ep1.mp4")]),
     new Playlist("RDR2", "/home/sample/videos/RDR2", [
       new Video("ep1", "/home/sample/videos/RDR2/ep1.mp4"),
-      new Video("ep2", "/home/sample/videos/RDR2/ep2.mp4")
+      new Video("ep2", "/home/sample/videos/RDR2/ep2.mp4"),
+    ]),
+    new Playlist("RDR2", "/home/sample/videos/RDR2", [
+      new Video("ep1", "/home/sample/videos/RDR2/ep1.mp4"),
+      new Video("ep2", "/home/sample/videos/RDR2/ep2.mp4"),
+    ]),
+    new Playlist("RDR2", "/home/sample/videos/RDR2", [
+      new Video("ep1", "/home/sample/videos/RDR2/ep1.mp4"),
+      new Video("ep2", "/home/sample/videos/RDR2/ep2.mp4"),
+    ]),
+    new Playlist("RDR2", "/home/sample/videos/RDR2", [
+      new Video("ep1", "/home/sample/videos/RDR2/ep1.mp4"),
+      new Video("ep2", "/home/sample/videos/RDR2/ep2.mp4"),
+    ]),
+    new Playlist("RDR2", "/home/sample/videos/RDR2", [
+      new Video("ep1", "/home/sample/videos/RDR2/ep1.mp4"),
+      new Video("ep2", "/home/sample/videos/RDR2/ep2.mp4"),
     ]),
   ])
 
-  const handleDirectoryChange = (event) => {
+  const handleDirectoryChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setPath(event.target.value);
   };
 
   return (
-    <main className='flex flex-col items-center justify-center h-screen'>
-      <div className='w-3/6 p-2'>
+    <main className='flex flex-col items-center justify-center min-h-screen'>
+      <div className='p-2'>
         <h1 className='text-4xl'>Uploader</h1>
         <div className='flex py-1'>
           <p className='text-xl w-5/12'>Choose your videos path:</p>
