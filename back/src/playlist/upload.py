@@ -53,18 +53,25 @@ VALID_PRIVACY_STATUSES = ("public", "private", "unlisted")
 
 
 def get_authenticated_service():
-  flow = flow_from_clientsecrets(CLIENT_SECRETS_FILE,
-    scope=YOUTUBE_SCOPES,
-    message=MISSING_CLIENT_SECRETS_MESSAGE)
+    try:
+        flow = flow_from_clientsecrets(
+            CLIENT_SECRETS_FILE,
+            scope=YOUTUBE_SCOPES,
+            message=MISSING_CLIENT_SECRETS_MESSAGE
+        )
+        storage = Storage("oauth2.json")
+        credentials = storage.get()
 
-  storage = Storage("oauth2.json")
-  credentials = storage.get()
+        if credentials is None or credentials.invalid:
+            credentials = run_flow(flow, storage)
 
-  if credentials is None or credentials.invalid:
-    credentials = run_flow(flow, storage)
-
-  return build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
-    http=credentials.authorize(httplib2.Http()))
+        return build(
+           YOUTUBE_API_SERVICE_NAME,
+           YOUTUBE_API_VERSION,
+           http=credentials.authorize(httplib2.Http())
+        )
+    except Exception as e:
+        raise e
 
 def create_playlist(youtube, title, description, privacy_status):
     body = {

@@ -2,8 +2,6 @@ import os
 import sys
 from json import dumps
 
-PATH = sys.argv[1]
-
 class Playlist:
     def __init__(self, name: str, path: str) -> None:
         self.name = name
@@ -48,12 +46,14 @@ def is_a_video(file: str) -> bool:
     except:
         return False
 
-def run():
-    playlists = create_playlists()
+def run(path: str):
+    PATH = path
+    playlists = create_playlists(PATH)
     playlists = get_playlists_videos(playlists)
     save_playlists(playlists)
 
-def create_playlists() -> list[Playlist]:
+def create_playlists(path: str) -> list[Playlist]:
+    PATH = path
     playlists = [Playlist("blank", PATH)]
     for item in os.listdir(PATH):
         if is_a_folder(f"{PATH}/{item}"):
@@ -83,4 +83,4 @@ def save_playlists(playlists: list[Playlist]) -> None:
 
 
 if __name__ == "__main__":
-    run()
+    run("/home/wellington/Documentos")
