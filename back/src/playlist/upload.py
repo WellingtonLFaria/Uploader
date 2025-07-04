@@ -1,35 +1,47 @@
 import http.client as httplib
 import httplib2
 import os
-import sys
 import time
 import random
 
 import json
 
+# NOTE: Aparentemente as bibliotecas implementadas atualmente estão obsoletas
+# TODO: Verificar se existem bibliotecas mais recentes para o OAuth2 do Google
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.file import Storage
-from oauth2client.tools import argparser, run_flow
+from oauth2client.tools import run_flow
 
-PLAYLIST_PATH_FILE = "playlist.json" 
+# TODO: Transformar constantes em variáveis de ambiente
+PLAYLIST_PATH_FILE = "playlist.json"
 CLIENT_SECRETS_FILE = "client_secrets.json"
 
 httplib2.RETRIES = 1
 MAX_RETRIES = 10
 
-RETRIABLE_EXCEPTIONS = (httplib2.HttpLib2Error, IOError, httplib.NotConnected,
-  httplib.IncompleteRead, httplib.ImproperConnectionState,
-  httplib.CannotSendRequest, httplib.CannotSendHeader,
-  httplib.ResponseNotReady, httplib.BadStatusLine)
-  
+RETRIABLE_EXCEPTIONS = (
+    httplib2.HttpLib2Error,
+    IOError,
+    httplib.NotConnected,
+    httplib.IncompleteRead,
+    httplib.ImproperConnectionState,
+    httplib.CannotSendRequest,
+    httplib.CannotSendHeader,
+    httplib.ResponseNotReady,
+    httplib.BadStatusLine,
+)
+
 RETRIABLE_STATUS_CODES = [500, 502, 503, 504]
 
 
-YOUTUBE_SCOPES = ["https://www.googleapis.com/auth/youtube", "https://www.googleapis.com/auth/youtube.force-ssl", 
-          "https://www.googleapis.com/auth/youtubepartner"]
+YOUTUBE_SCOPES = [
+    "https://www.googleapis.com/auth/youtube",
+    "https://www.googleapis.com/auth/youtube.force-ssl",
+    "https://www.googleapis.com/auth/youtubepartner",
+]
 YOUTUBE_API_SERVICE_NAME = "youtube"
 YOUTUBE_API_VERSION = "v3"
 
@@ -46,8 +58,7 @@ https://console.cloud.google.com/
 
 For more information about the client_secrets.json file format, please visit:
 https://developers.google.com/api-client-library/python/guide/aaa_client_secrets
-""" % os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                   CLIENT_SECRETS_FILE))
+""" % os.path.abspath(os.path.join(os.path.dirname(__file__), CLIENT_SECRETS_FILE))
 
 VALID_PRIVACY_STATUSES = ("public", "private", "unlisted")
 
@@ -57,7 +68,7 @@ def get_authenticated_service():
         flow = flow_from_clientsecrets(
             CLIENT_SECRETS_FILE,
             scope=YOUTUBE_SCOPES,
-            message=MISSING_CLIENT_SECRETS_MESSAGE
+            message=MISSING_CLIENT_SECRETS_MESSAGE,
         )
         storage = Storage("oauth2.json")
         credentials = storage.get()
@@ -66,103 +77,96 @@ def get_authenticated_service():
             credentials = run_flow(flow, storage)
 
         return build(
-           YOUTUBE_API_SERVICE_NAME,
-           YOUTUBE_API_VERSION,
-           http=credentials.authorize(httplib2.Http())
+            YOUTUBE_API_SERVICE_NAME,
+            YOUTUBE_API_VERSION,
+            http=credentials.authorize(httplib2.Http()),
         )
     except Exception as e:
         raise e
 
+
 def create_playlist(youtube, title, description, privacy_status):
     body = {
-        'snippet': {
-            'title': title,
-            'description': description
-        },
-        'status': {
-            'privacyStatus': privacy_status
-        }
+        "snippet": {"title": title, "description": description},
+        "status": {"privacyStatus": privacy_status},
     }
 
-    playlists_insert_response = youtube.playlists().insert(
-        part='snippet,status',
-        body=body
-    ).execute()
+    playlists_insert_response = (
+        youtube.playlists().insert(part="snippet,status", body=body).execute()
+    )
 
-    return playlists_insert_response['id']
+    return playlists_insert_response["id"]
+
 
 def add_video_to_playlist(youtube, video_id, playlist_id):
     body = {
-        'snippet': {
-            'playlistId': playlist_id,
-            'resourceId': {
-                'kind': 'youtube#video',
-                'videoId': video_id
-            }
+        "snippet": {
+            "playlistId": playlist_id,
+            "resourceId": {"kind": "youtube#video", "videoId": video_id},
         }
     }
 
-    youtube.playlistItems().insert(
-        part='snippet',
-        body=body
-    ).execute()
+    youtube.playlistItems().insert(part="snippet", body=body).execute()
+
 
 def initialize_upload(youtube, video, playlist_id):
     body = {
-        'snippet': {
-            'title': video["name"],
-            'description': f"Video: {video['name']}",
-            'tags': None,
+        "snippet": {
+            "title": video["name"],
+            "description": f"Video: {video['name']}",
+            "tags": None,
         },
-        'status': {
-            'privacyStatus': 'public'
-        }
+        "status": {"privacyStatus": "public"},
     }
 
     insert_request = youtube.videos().insert(
-        part=','.join(body.keys()),
+        part=",".join(body.keys()),
         body=body,
-        media_body=MediaFileUpload(video["path"], chunksize=-1, resumable=True)
+        media_body=MediaFileUpload(video["path"], chunksize=-1, resumable=True),
     )
 
     response = resumable_upload(insert_request)
     print(response)
-    if playlist_id != None:
-        add_video_to_playlist(youtube, response['id'], playlist_id)
+    if playlist_id is not None:
+        add_video_to_playlist(youtube, response["id"], playlist_id)
+
 
 def resumable_upload(insert_request):
-  response = None
-  error = None
-  retry = 0
-  while response is None:
-    try:
-      print("Uploading file...")
-      status, response = insert_request.next_chunk()
-      if response is not None:
-        if 'id' in response:
-          print ("Video id '%s' was successfully uploaded." % response['id'])
-        else:
-          exit("The upload failed with an unexpected response: %s" % response)
-    except HttpError as e:
-      if e.resp.status in RETRIABLE_STATUS_CODES:
-        error = "A retriable HTTP error %d occurred:\n%s" % (e.resp.status,
-                                                             e.content)
-      else:
-        raise
-    except RETRIABLE_EXCEPTIONS as e:
-      error = "A retriable error occurred: %s" % e
+    response = None
+    error = None
+    retry = 0
+    while response is None:
+        try:
+            print("Uploading file...")
+            status, response = insert_request.next_chunk()
+            if response is not None:
+                if "id" in response:
+                    print("Video id '%s' was successfully uploaded." % response["id"])
+                else:
+                    exit("The upload failed with an unexpected response: %s" % response)
+        except HttpError as e:
+            if e.resp.status in RETRIABLE_STATUS_CODES:
+                error = "A retriable HTTP error %d occurred:\n%s" % (
+                    e.resp.status,
+                    e.content,
+                )
+            else:
+                raise
+        except RETRIABLE_EXCEPTIONS as e:
+            error = "A retriable error occurred: %s" % e
 
-    if error is not None:
-      print (error)
-      retry += 1
-      if retry > MAX_RETRIES:
-        exit("No longer attempting to retry.")
+        if error is not None:
+            print(error)
+            retry += 1
+            if retry > MAX_RETRIES:
+                exit("No longer attempting to retry.")
 
-      max_sleep = 2 ** retry
-      sleep_seconds = random.random() * max_sleep
-      print ("Sleeping %f seconds and then retrying..." % sleep_seconds)
-      time.sleep(sleep_seconds)
-  return response
+            max_sleep = 2**retry
+            sleep_seconds = random.random() * max_sleep
+            print("Sleeping %f seconds and then retrying..." % sleep_seconds)
+            time.sleep(sleep_seconds)
+    return response
+
 
 def main():
     with open("playlist.json", "r") as file:
@@ -172,15 +176,18 @@ def main():
             playlist = item["name"]
             playlist_id = None
             if playlist != "blank" and len(item["videos"]) > 0:
-                playlist_id = create_playlist(youtube, playlist, f"Playlist: {playlist}", "public")
+                playlist_id = create_playlist(
+                    youtube, playlist, f"Playlist: {playlist}", "public"
+                )
             for video in item["videos"]:
                 initialize_upload(youtube, video, playlist_id)
     print("All videos uploaded")
 
+
 def test():
     with open("playlist.json", "r") as file:
         playlist = json.loads(file.read())
-        
+
         for item in playlist["playlists"]:
             playlist = item["name"]
             print(playlist)
@@ -191,5 +198,5 @@ def test():
     print("All videos uploaded")
 
 
-if __name__ == '__main__':
-   main()
+if __name__ == "__main__":
+    main()
